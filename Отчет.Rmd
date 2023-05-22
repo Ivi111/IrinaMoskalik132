@@ -1,0 +1,108 @@
+---
+title: "Отчет"
+author: "Ирина Москалик"
+date: "22 05 2023"
+output: html_document
+#Задание 1
+#Очистка памяти
+rm(list=ls())
+install.packages()
+library(tidyverse)
+library(rnoaa)
+library(lubridate)
+station_data = ghcnd_stations()
+kyzyl = data.frame(id = "KYZYL", latitude = 51.7198,  longitude = 94.4379)
+kyzyl_around = meteo_nearby_stations(lat_lon_df = kyzyl, station_data = station_data,
+                                      limit = 10, var = c("PRCP", "TAVG"),
+                                      year_min = 2002, year_max = 2011)
+kyzyl_id = kyzyl_around[["KYZYL"]][["id"]][1:10]
+#Для получения всех данных с метеостанции, зная ее идентификатор, используйте след. команду
+all_kyzyl_data = meteo_tidy_ghcnd(stationid = kyzyl_id,date_min = "2002-01-01", date_max = "2011-12-31");all_samara_data
+library(dplyr)
+all_kyzyl_data=select(all_kyzyl_data,-mdpr,-prcp,-snwd)
+all_kyzyl_data=mutate(all_kyzyl_data,years=year(date),Month=month(date), Day=day(date))
+#all_kyzyl_data=all_kyzyl_data1
+#all_kyzyl_data=filter(all_kyzyl_data,years>2002&years<2011)
+all_kyzyl_data$years=factor(all_kyzyl_data$years)
+all_kyzyl_data$Month=factor(all_kyzyl_data$Month)
+all_kyzyl_data$Day=factor(all_kyzyl_data$Day)
+all_kyzyl_data=mutate(all_kyzyl_data,tavg=tavg/10)
+all_kyzyl_data=filter(all_kyzyl_data,tavg>5)
+#группируем без учета лет и станций по месяцам и дням
+tactive_kyzyl_data<- group_by(all_kyzyl_data, Month,Day)
+#считаем среднюю 
+tactive=summarize(tactive_kyzyl_data, tavg = mean(tavg))
+#получаем массив, группируем по месяцам и температуре
+tactivesum=group_by(tactive, Month)
+tactivesum=summarize(tactivesum, tsum=sum(tavg))
+#средняя сумма активных температур
+sum(tactivesum$tsum)
+#Урожайность
+afi <- c(0.00, 32.11, 26.31, 25.64, 23.20, 18.73, 16.30, 13.83, 0.00)
+bfi <- c(0.00, 11.30, 9.26, 9.03, 8.16, 6.59, 5.73, 4.87, 0.00)
+di <- c(0.00, 0.33, 1.00, 1.00, 1.00, 0.32, 0.00, 0.00, 0.00)
+x=sum((afi+bfi*sum(tactivesum$tsum))*di)*300 / (1600*2.2*(100-25))
+x
+x1=10^6*x
+x1
+
+
+
+#Задание 2
+rm(list = ls())
+install.packages()
+library("dplyr")
+library(tidyr)
+zad2_data = read.csv("https://www.dropbox.com/s/erhs9hoj4vhrz0b/eddypro.csv?dl=1", skip = 1, na =c("","NA","-9999","-9999.0"), comment=c("["))  
+#Удаляем ненужные строки
+zad2_data = zad2_data[-c(1:875, 5292:8741),]
+zad2_data
+#Убираем переменную roll
+zad2_data = select(zad2_data, -(roll))
+#Преобразуем в факторы переменные типа char
+zad2_data = zad2_data %>% mutate_if(is.character, factor)
+#Изменение знаков
+names(zad2_data) =  str_replace_all(names(zad2_data), "[!]","_emph_")
+names(zad2_data) = names(zad2_data) %>% 
+  str_replace_all("[!]","_emph_") %>% 
+  str_replace_all("[?]","_quest_") %>% 
+  str_replace_all("[*]","_star_") %>% 
+  str_replace_all("[+]","_plus_") %>%
+  str_replace_all("[-]","_minus_") %>%
+  str_replace_all("[@]","_at_") %>%
+  str_replace_all("[$]","_dollar_") %>%
+  str_replace_all("[#]","_hash_") %>%
+  str_replace_all("[/]","_div_") %>%
+  str_replace_all("[%]","_perc_") %>%
+  str_replace_all("[&]","_amp_") %>%
+  str_replace_all("[\\^]","_power_") %>%
+  str_replace_all("[()]","_") 
+glimpse(zad2_data)
+zad2_data_night <- zad2_data [zad2_data$daytime == FALSE, c(1:ncol(zad2_data))]
+#Оставляем только численные данные  
+zad2_data_numeric = zad2_data_night[,sapply(zad2_data_night,is.numeric)]
+zad2_data_numeric
+zad2_drop=drop_na(zad2_data_numeric)
+cor_td = cor(drop_na(zad2_drop))%>% as.data.frame %>% select(h2o_flux) 
+vars = row.names(cor_td)[cor_td$h2o_flux^2 > .1] %>% na.exclude
+formula = as.formula(paste("h2o_flux~", paste(vars,collapse = "+"), sep=""))
+zad2_data = with(df, df[(date >= "2013-06-01" & date <= "2013-08-31")
+zad2_data     
+#Множественная регрессия
+model1 = lm(h2o_flux ~ (rand_err_Tau + H + LE + rand_err_LE + h2o_flux + rand_err_h2o_flux + co2_molar_density + co2_mixing_ratio + RH + VPD + max_speed + TKE +un_H + un_LE + un_h2o_flux + u_var + 
+                          v_var + co2_signal_strength_7200)^2, data = zad2_drop)
+model1
+coef(model1) 
+resid(model1) 
+confint(model1) 
+summary(model1)
+anova(model1)
+mod2 = lm(h2o_flux~( H + LE + VPD + co2_flux + RH + un_H + un_h2o_flux)^2,data=zad2_drop)
+coef(mod2) 
+resid(mod2) 
+confint(mod2) 
+summary(mod2)
+anova(mod2)
+
+
+
